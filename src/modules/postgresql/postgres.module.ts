@@ -1,27 +1,33 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    // Leftover forRootAsync, could be rewritten to use config service validating environment vars values.
     TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService): TypeOrmModuleOptions => {
-        const host = config.get<string>('POSTGRES_HOST'),
-          port = config.get<string>('POSTGRES_PORT'),
-          user = config.get<string>('POSTGRES_USER'),
-          pass = config.get<string>('POSTGRES_PASSWORD'),
-          db = config.get<string>('POSTGRES_DB');
+      useFactory: (): TypeOrmModuleOptions => {
+        const {
+          POSTGRES_HOST,
+          POSTGRES_PORT,
+          POSTGRES_USER,
+          POSTGRES_PASSWORD,
+          POSTGRES_DB,
+        } = process.env;
 
-        return {
+        const cfg: TypeOrmModuleOptions = {
           type: 'postgres',
-          host,
-          port: +port,
-          username: user,
-          password: pass,
-          database: db,
+          host: POSTGRES_HOST,
+          port: +POSTGRES_PORT,
+          username: POSTGRES_USER,
+          password: POSTGRES_PASSWORD,
+          database: POSTGRES_DB,
+          entities: ['dist/entities/*.entity.js'],
+          synchronize: true,
         };
+
+        return cfg;
       },
     }),
   ],
